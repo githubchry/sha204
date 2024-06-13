@@ -1,0 +1,51 @@
+.idea
+.svn
+.cache
+.fleet
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+
+cmake-build-*
+*.tar.*
+
+dist/*
+!dist/config
+dist_
+new-root
+thirdpart
+*.log
+*.log.*
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app

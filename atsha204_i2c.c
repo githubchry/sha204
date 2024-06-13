@@ -21,12 +21,10 @@ enum i2c_word_address {
 uint8_t sha204p_wakeup(int fd)
 {
 	unsigned char wakeup = 0;
-	int ret = write(fd,&wakeup,1);
-	if(ret != 1)
-	//	printf(">>>sha204p_wakeup	:	%d\n",ret);	
+	write(fd,&wakeup,1);
 	usleep(SHA204_WAKEUP_DELAY * 1000);
 
-	return ;
+	return SHA204_SUCCESS;
 }
 
 static uint8_t sha204p_send(int fd, uint8_t word_address, uint8_t count, uint8_t *buffer)
@@ -48,7 +46,7 @@ static uint8_t sha204p_send(int fd, uint8_t word_address, uint8_t count, uint8_t
 	
 	r = buffer;
 	for(i=0;i<count;++i,r++) {
-		printf("%3x",*r);
+		printf("%02x ",*r);
 		if(i%10 ==9) printf("\n");					
 	}
 	
@@ -91,18 +89,18 @@ uint8_t sha204p_receive_response(int fd, uint8_t size, uint8_t *response)
 	read(fd,&response[0],1);
 
 	count = response[0];
-	printf("\n>>>rec_data_count		:	%x\n",count);
+	printf("\n>>>rec_data_count		:	%d\n",count);
 	if ((count < SHA204_RSP_SIZE_MIN) || (count > SHA204_RSP_SIZE_MAX))
 		return SHA204_INVALID_SIZE;
 
 	ret = read(fd,response+1,count-1);
 	if (ret != -1)
 	{
-		printf("   >>>rec_response_count	:	%x \n",ret);	
+		printf("   >>>rec_response_count	:	%d \n",ret);
 		p = response+1;
 		for(i=0;i<ret;i++,p++){
-			printf("%3x",*p);
-			if(i%10 ==9) printf("\n");					
+			printf("%02x ",*p);
+			if(i%4 == 3) printf("\n");
 		}
 		if(i == ret) printf("\n");
 	}

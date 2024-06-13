@@ -35,6 +35,7 @@ extern uint8_t encrypted_read(int fd, uint16_t key_id, uint8_t *key_value, uint1
 extern uint8_t encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, uint16_t slot, uint8_t *writedata) ;
 
 //atsha204_actions
+uint8_t atsha204_read_config(int fd, uint8_t data[88]);
 uint8_t atsha204_read_conf(int fd, int slot, uint8_t *read_conf);
 uint8_t atsha204_read_data(int fd, int slot, uint8_t *read_data);
 uint8_t atsha204_write_conf(int fd, int slot, uint8_t conf_low_8_bits, uint8_t conf_high_8_bits);

@@ -8,7 +8,7 @@
 
 #include "atsha204_ctc_d1_solutions.h"
 
-#define I2C_BUS       "/dev/i2c-0"
+#define I2C_BUS       "/dev/i2c-c"
 #define ATSHA204_ADDR  0x64
 
 int main(int argc,char* argv[])
@@ -40,6 +40,20 @@ int main(int argc,char* argv[])
 	if (ioctl(fd, I2C_SLAVE, ATSHA204_ADDR) < 0) {
 		printf("Set chip address failed\n");
 	}
+
+
+    atsha204_read_data(fd, 0, tmp_key);
+    printf("read atsha204a slot %d:", 0);for (int i = 0; i < SHA204_KEY_SIZE; i++)printf(" %02x", tmp_key[i]);printf("\n");
+
+
+
+    uint8_t config[88];
+    atsha204_read_config(fd, config);
+
+    return 0;
+
+
+
 	encrypted_write(fd,  0, serect,4,key_0);
 	encrypted_read(fd,  0, serect,4,tmp_key);
 	for(i=0;i<32;i++){
