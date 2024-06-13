@@ -152,6 +152,7 @@ string( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}
 # 当前目录名作为输出目标文件名
 set(output_name ${CURRENT_FOLDER})
 
-aux_source_directory(. source_files)
-add_executable(${output_name} ${source_files})
+aux_source_directory(sha204 SOURCE_SHA204_FILES)
+
+add_executable(${output_name} ${SOURCE_SHA204_FILES} main.cpp)
 
