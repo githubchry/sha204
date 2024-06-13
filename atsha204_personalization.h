@@ -9,7 +9,7 @@
 #ifndef ATSHA204_PERSONALIZATION_H_
 #define ATSHA204_PERSONALIZATION_H_
 
-#include "atsha204_ctc_d1_solutions.h"
+#include "atsha204_actions.h"
 
 
 

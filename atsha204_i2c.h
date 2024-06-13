@@ -9,7 +9,7 @@
 #ifndef ATSHA204_I2C_H_
 #define ATSHA204_I2C_H_
 
-#include "atsha204_ctc_d1_solutions.h"
+#include "atsha204_actions.h"
 
 // error codes for physical hardware dependent module
 // Codes in the range 0x00 to 0xF7 are shared between physical interfaces (SWI, TWI, SPI).
