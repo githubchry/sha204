@@ -1,108 +1,5 @@
-#include "atsha204_ctc_d1_solutions.h"
+#include "atsha204_actions.h"
 
-
-/* 返回成功写入的长度，包括最后的'\0' */
-static int hex_dump_str(char *str, int str_len, const uint8_t *buf, int buf_len, uint8_t col) {
-    uint32_t i;
-    int ret;
-    int index = 0;
-
-
-    if ((NULL == str) || (NULL == buf) || (0 >= str_len) || (0 >= buf_len))
-        return -1;
-
-    for (i = 0; i < buf_len; i++) {
-        if (col && (0 == ((i + 1) % col)))
-            ret = snprintf(str + index, str_len, "%02x\n", buf[i]);
-        else
-            ret = snprintf(str + index, str_len, "%02x ", buf[i]);
-
-        if ((0 > ret) || (ret >= str_len))
-            return -1;
-        str_len -= ret;
-        index += ret;
-    }
-
-    if (' ' == (*(str + index - 1)))
-        *(str + index - 1) = '\n';
-    return index + 1;
-}
-
-
-static int show_config(uint8_t config[88]) {
-    uint8_t str[2048];
-    int len = 2048;
-    int index = 0;
-    int ret;
-
-
-    ret = snprintf(str, len, "SN:\n");
-    if ((0 > ret) || (len <= ret))
-        return -1;
-    index += ret;
-    len -= ret;
-
-    ret = hex_dump_str(str + index, len, config, 20, 4);
-    if ((0 > ret) || (len < ret))
-        return -1;
-    index += ret - 1;
-    len -= ret - 1;
-
-
-    ret = snprintf(str + index, len, "\nSlotConfig:\n");
-    if ((0 > ret) || (len <= ret))
-        return -1;
-    index += ret;
-    len -= ret;
-
-    ret = hex_dump_str(str + index, len, config + 20, 32, 4);
-    if ((0 > ret) || (len < ret))
-        return -1;
-    index += ret - 1;
-    len -= ret - 1;
-
-
-    ret = snprintf(str + index, len, "\nUseFlag:\n");
-    if ((0 > ret) || (len <= ret))
-        return -1;
-    index += ret;
-    len -= ret;
-
-    ret = hex_dump_str(str + index, len, config + 52, 16, 4);
-    if ((0 > ret) || (len < ret))
-        return -1;
-    index += ret - 1;
-    len -= ret - 1;
-
-
-    ret = snprintf(str + index, len, "\nLastKeyUse:\n");
-    if ((0 > ret) || (len <= ret))
-        return -1;
-    index += ret;
-    len -= ret;
-
-    ret = hex_dump_str(str + index, len, config + 68, 16, 4);
-    if ((0 > ret) || (len < ret))
-        return -1;
-    index += ret - 1;
-    len -= ret - 1;
-
-
-    ret = snprintf(str + index, len, "\nLock:\n");
-    if ((0 > ret) || (len <= ret))
-        return -1;
-    index += ret;
-    len -= ret;
-
-    ret = hex_dump_str(str + index, len, config + 84, 4, 4);
-    if ((0 > ret) || (len < ret))
-        return -1;
-    index += ret - 1;
-    len -= ret - 1;
-
-    printf("%s\n", str);
-    return index + 1;
-}
 
 /**********************************************************************
 *Function	:	atsha204_read_config
@@ -166,10 +63,8 @@ uint8_t atsha204_read_config(int fd, uint8_t data[88]) {
 
         memcpy(data + 64 + i * 4, global_rx_buffer, 4);
     }
-    show_config(data);
 
     return status;
-
 }
 
 /**********************************************************************
