@@ -34,7 +34,7 @@ uint8_t atsha204_read_config(int fd, uint8_t data[88]) {
             return -1;
         }
 
-        memcpy(data + 32 * i, global_rx_buffer, 32);
+        memcpy(data + 32 * i, &global_rx_buffer[1], 32);
     }
 
     // 接着读6次, 每次4字节, param_1不指定SHA204_ZONE_COUNT_FLAG
@@ -61,7 +61,7 @@ uint8_t atsha204_read_config(int fd, uint8_t data[88]) {
             return -1;
         }
 
-        memcpy(data + 64 + i * 4, global_rx_buffer, 4);
+        memcpy(data + 64 + i * 4, &global_rx_buffer[1], 4);
     }
 
     return status;
