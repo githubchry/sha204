@@ -1,5 +1,6 @@
 #include "sha204_comm.h"                //!< definitions and declarations for the Communication module
 #include "sha204_lib_return_codes.h"    //!< declarations of function return codes
+#include "atsha204_i2c.h"    //!< declarations of function return codes
 #include <unistd.h>                     // usleep
 
 uint8_t sha204c_check_crc(uint8_t *response);
@@ -158,7 +159,7 @@ uint8_t sha204c_send_and_receive(int fd,struct sha204_send_and_receive_parameter
 	sha204c_calculate_crc(count_minus_crc, args->tx_buffer, args->tx_buffer + count_minus_crc);
 
 	// Retry loop for sending a command and receiving a response.
-	n_retries_send = SHA204_RETRY_COUNT + 1;
+	n_retries_send = 2;
 
 	while ((n_retries_send-- > 0) && (ret_code != SHA204_SUCCESS)) {
 
@@ -177,7 +178,7 @@ uint8_t sha204c_send_and_receive(int fd,struct sha204_send_and_receive_parameter
 		usleep(args->poll_delay * 1000);
 
 		// Retry loop for receiving a response.
-		n_retries_receive = SHA204_RETRY_COUNT + 1;
+		n_retries_receive = 2;
 		while (n_retries_receive-- > 0) {
 
 			// Reset response buffer.

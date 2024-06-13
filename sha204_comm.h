@@ -1,7 +1,10 @@
 #ifndef SHA204_COMM_H
 #   define SHA204_COMM_H
 
-#include "sha204_physical.h"        //!< declarations that are common to all interface implementations
+#include <stdint.h>
+
+#define SHA204_RSP_SIZE_MIN          ((uint8_t)  4)  //!< minimum number of bytes in response
+#define SHA204_RSP_SIZE_MAX          ((uint8_t) 35)  //!< maximum size of response packet
 
 //! maximum command delay
 #define SHA204_COMMAND_EXEC_MAX      (69)

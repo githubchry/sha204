@@ -4,12 +4,15 @@
  * Created: 10/6/2013 5:28:22 AM
  *  Author: easanghanwa
   * Modified:jli@acorn-net.com
- */ 
+ */
 
 #include "atsha204_i2c.h"
+#include "sha204_comm.h"
+#include "sha204_lib_return_codes.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 enum i2c_word_address {
 	SHA204_I2C_PACKET_FUNCTION_RESET,  //!< Reset device.
@@ -22,7 +25,7 @@ uint8_t sha204p_wakeup(int fd)
 {
 	unsigned char wakeup = 0;
 	write(fd,&wakeup,1);
-	usleep(SHA204_WAKEUP_DELAY * 1000);
+	usleep(3 * 1000);   // 唤醒后至少等待2.5ms
 
 	return SHA204_SUCCESS;
 }

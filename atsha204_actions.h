@@ -15,11 +15,9 @@
 #include "sha256.h"
 #include "atsha204_i2c.h"
 #include "sha204_helper.h"
-#include "sha204_physical.h"            
-#include "sha204_lib_return_codes.h"      
+#include "sha204_lib_return_codes.h"
 #include "sha204_comm.h" 
 #include "sha204_comm_marshaling.h"
-#include "sha204_config.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -39,6 +39,7 @@
 #ifndef SHA204_HELPER_H
 #   define SHA204_HELPER_H
 
+#include <stdint.h>
 //-------------------
 // Macro definitions
 //-------------------

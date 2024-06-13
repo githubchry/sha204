@@ -9,18 +9,29 @@
 #ifndef ATSHA204_I2C_H_
 #define ATSHA204_I2C_H_
 
-#include "atsha204_actions.h"
 
-// error codes for physical hardware dependent module
-// Codes in the range 0x00 to 0xF7 are shared between physical interfaces (SWI, TWI, SPI).
-// Codes in the range 0xF8 to 0xFF are special for the particular interface.
-#define I2C_FUNCTION_RETCODE_SUCCESS     ((uint8_t) 0x00) //!< Communication with device succeeded.
-#define I2C_FUNCTION_RETCODE_COMM_FAIL   ((uint8_t) 0xF0) //!< Communication with device failed.
-#define I2C_FUNCTION_RETCODE_TIMEOUT     ((uint8_t) 0xF1) //!< Communication timed out.
-#define I2C_FUNCTION_RETCODE_NACK        ((uint8_t) 0xF8) //!< TWI nack
+#include <stdint.h>                                  // data type definitions
 
-// Upper Layer Compliance Definitions
-#define I2C_CLOCK				ATSHA204_I2C_SPEED
+#define SHA204_BUFFER_POS_COUNT      (0)             //!< buffer index of count byte in command or response
+#define SHA204_BUFFER_POS_DATA       (1)             //!< buffer index of data in response
+
+//! width of Wakeup pulse in 10 us units
+#define SHA204_WAKEUP_PULSE_WIDTH    (uint8_t) (6.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5)
+
+//! delay between Wakeup pulse and communication in ms
+#define SHA204_WAKEUP_DELAY          (uint8_t) (3.0 * CPU_CLOCK_DEVIATION_POSITIVE + 0.5)
+
+
+uint8_t sha204p_send_command(int fd,uint8_t count, uint8_t *command);
+uint8_t sha204p_receive_response(int fd,uint8_t size, uint8_t *response);
+void    sha204p_init(void);
+void    sha204p_set_device_id(uint8_t id);
+uint8_t sha204p_wakeup(int fd);
+uint8_t sha204p_idle(int fd);
+uint8_t sha204p_sleep(int fd);
+uint8_t sha204p_reset_io(int fd);
+uint8_t sha204p_resync(int fd,uint8_t size, uint8_t *response);
+
 
 
 #endif /* ATSHA204_I2C_H_ */
