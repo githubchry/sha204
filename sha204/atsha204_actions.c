@@ -1,5 +1,77 @@
 #include "atsha204_actions.h"
 
+// 读出加密芯片SN, 共9字节
+uint8_t atsha204_read_sn(int fd, uint8_t data[9]) {
+    uint8_t status = SHA204_SUCCESS;
+
+    // Write the configuration parameters to the slot
+    cmd_args.op_code = SHA204_READ;
+    cmd_args.param_1 = SHA204_ZONE_CONFIG | SHA204_ZONE_COUNT_FLAG;
+    cmd_args.param_2 = 0;   // 第一次0x00开始读, 第二次0x08开始读
+    cmd_args.data_len_1 = 0;
+    cmd_args.data_1 = NULL;
+    cmd_args.data_len_2 = 0;
+    cmd_args.data_2 = NULL;
+    cmd_args.data_len_3 = 0;
+    cmd_args.data_3 = NULL;
+    cmd_args.tx_size = 0x10;
+    cmd_args.tx_buffer = global_tx_buffer;
+    cmd_args.rx_size = 0x10;
+    cmd_args.rx_buffer = global_rx_buffer;
+    //sha204p_wakeup(fd);
+    status = sha204m_execute(fd, &cmd_args);
+    //sha204p_idle(fd);
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED! atsha204_read_config\n");
+        return -1;
+    }
+
+    memcpy(data, &global_rx_buffer[1], 4);
+    memcpy(data + 4, &global_rx_buffer[1] + 8, 4);
+    data[8] = global_rx_buffer[1 + 12];
+
+    return status;
+}
+
+/**********************************************************************
+*Function	:	atsha204_read_devrev
+*Arguments	:	int fd				---file description
+*				uint8_t data[4]	---output
+*description	:	can read the devre at any time
+**********************************************************************/
+uint8_t atsha204_read_devrev(int fd, uint8_t data[4]) {
+    uint8_t status = SHA204_SUCCESS;
+    // Use the DevRev command to check communication to chip by validating value received.
+    // Note that DevRev value is not constant over future revisions of the chip so failure
+    // of this function may not mean bad connection.
+    cmd_args.op_code		= SHA204_DEVREV;				// ATSHA204 Command OpCode Parameter
+    cmd_args.param_1		= 0x00;							// ATSHA204 Command Param1 Parameter
+    cmd_args.param_2		= 0x00;							// ATSHA204 Command Param2 Parameter
+    cmd_args.data_len_1		= 0x00;							// Length in bytes of first data content
+    cmd_args.data_1			= NULL;							// Pointer to buffer containing first data set
+    cmd_args.data_len_2		= 0x00;							// Length in bytes of second data content
+    cmd_args.data_2			= NULL;							// Pointer to buffer containing second data set
+    cmd_args.data_len_3		= 0x00;							// Length in bytes of third data content
+    cmd_args.data_3			= NULL;							// Pointer to buffer containing third data set
+    cmd_args.tx_size		= DEVREV_COUNT;					// Size of the transmit buffer
+    cmd_args.tx_buffer		= global_tx_buffer;				// Pointer to the transmit buffer
+    cmd_args.rx_size		= sizeof(global_rx_buffer);		// Size of the receive buffer
+    cmd_args.rx_buffer		= global_rx_buffer;				// Pointer to the receive buffer
+    status = sha204m_execute(fd,&cmd_args);						// Marshals the parameters and executes the command
+
+    sha204p_sleep(fd);  // Put the chip to sleep in case you stop to examine buffer contents
+
+    // validate the received value for DevRev
+    if( status != SHA204_SUCCESS ) {
+        printf("FAILED! atsha204_read_devrev\n");
+        return -1;
+    }
+
+    memcpy(data, &global_rx_buffer[1], 4);
+
+    return status;
+
+}
 
 /**********************************************************************
 *Function	:	atsha204_read_config
@@ -66,6 +138,45 @@ uint8_t atsha204_read_config(int fd, uint8_t data[88]) {
 
     return status;
 }
+
+/**********************************************************************
+*Function	:	atsha204_write_config
+*Arguments	:	int fd				---file description
+*				uint8_t data[88], 				---atsha204a  config
+*description	:	can write config before locking the config zone
+**********************************************************************/
+uint8_t atsha204_write_config(int fd, uint8_t data[68]) {
+
+    uint8_t status = SHA204_SUCCESS;
+
+    // 4字节写17次
+    for (int i = 0; i < 17; ++i) {
+        // Write the configuration parameters to the slot
+        cmd_args.op_code = SHA204_WRITE;
+        cmd_args.param_1 = SHA204_ZONE_CONFIG;
+        cmd_args.param_2 = DEVICE_MODES_ADDRESS + i;   // 从0x04开始写
+        cmd_args.data_len_1 = SHA204_ZONE_ACCESS_4;
+        cmd_args.data_1 = data + 4 * i;
+        cmd_args.data_len_2 = 0;
+        cmd_args.data_2 = NULL;
+        cmd_args.data_len_3 = 0;
+        cmd_args.data_3 = NULL;
+        cmd_args.tx_size = 0x10;
+        cmd_args.tx_buffer = global_tx_buffer;
+        cmd_args.rx_size = 0x10;
+        cmd_args.rx_buffer = global_rx_buffer;
+        //sha204p_wakeup(fd);
+        status = sha204m_execute(fd, &cmd_args);
+        //sha204p_idle(fd);
+        if (status != SHA204_SUCCESS) {
+            printf("FAILED! CONF ZONE is locked! \n");
+            return -1;
+        }
+    }
+
+    return SHA204_SUCCESS;
+}
+
 
 /**********************************************************************
 *Function	:	atsha204_read_conf

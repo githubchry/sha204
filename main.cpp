@@ -290,6 +290,9 @@ int main(int argc, char *argv[]) {
 
     dump_config(config);
 
+    uint8_t sn[9];
+    atsha204_read_sn(fd, sn);
+    printf("SN:");for (int i = 0; i < 9; i++)printf(" %02x", sn[i]);printf("\n");
     return 0;
 
 
