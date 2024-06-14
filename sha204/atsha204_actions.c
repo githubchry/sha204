@@ -1,5 +1,20 @@
 #include "atsha204_actions.h"
 
+// ATSHA204 Specific
+#include "sha256.h"
+#include "atsha204_i2c.h"
+#include "sha204_helper.h"
+#include "sha204_comm_marshaling.h"
+
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+static struct sha204_command_parameters cmd_args;		// Global Generalized Command Parameter
+static uint8_t global_tx_buffer[SHA204_CMD_SIZE_MAX];	// Global Transmit Buffer
+static uint8_t global_rx_buffer[SHA204_RSP_SIZE_MAX];	// Global Receive Buffer
+
+
 // 读出加密芯片锁状态, 共4字节
 uint8_t atsha204_read_lock(int fd, uint8_t data[4]) {
     uint8_t status = SHA204_SUCCESS;
@@ -7,7 +22,7 @@ uint8_t atsha204_read_lock(int fd, uint8_t data[4]) {
     // Write the configuration parameters to the slot
     cmd_args.op_code = SHA204_READ;
     cmd_args.param_1 = SHA204_ZONE_CONFIG;
-    cmd_args.param_2 = EXTRA_SELECTOR_LOCK_ADDRESS;
+    cmd_args.param_2 = 0x15;
     cmd_args.data_len_1 = 0X00;
     cmd_args.data_1 = NULL;
     cmd_args.data_len_2 = 0x00;
@@ -23,7 +38,7 @@ uint8_t atsha204_read_lock(int fd, uint8_t data[4]) {
     //sha204p_idle(fd);
     if (status != SHA204_SUCCESS) {
         printf("FAILED! atsha204_read_config\n");
-        return -1;
+        return status;
     }
 
     memcpy(data, &global_rx_buffer[1], 4);
@@ -54,7 +69,7 @@ uint8_t atsha204_read_sn(int fd, uint8_t data[9]) {
     //sha204p_idle(fd);
     if (status != SHA204_SUCCESS) {
         printf("FAILED! atsha204_read_config\n");
-        return -1;
+        return status;
     }
 
     memcpy(data, &global_rx_buffer[1], 4);
@@ -95,7 +110,7 @@ uint8_t atsha204_read_devrev(int fd, uint8_t data[4]) {
     // validate the received value for DevRev
     if( status != SHA204_SUCCESS ) {
         printf("FAILED! atsha204_read_devrev\n");
-        return -1;
+        return status;
     }
 
     memcpy(data, &global_rx_buffer[1], 4);
@@ -134,7 +149,7 @@ uint8_t atsha204_read_config(int fd, uint8_t data[88]) {
         //sha204p_idle(fd);
         if (status != SHA204_SUCCESS) {
             printf("FAILED! atsha204_read_config\n");
-            return -1;
+            return status;
         }
 
         memcpy(data + 32 * i, &global_rx_buffer[1], 32);
@@ -161,7 +176,7 @@ uint8_t atsha204_read_config(int fd, uint8_t data[88]) {
         //sha204p_idle(fd);
         if (status != SHA204_SUCCESS) {
             printf("FAILED! atsha204_read_config\n");
-            return -1;
+            return status;
         }
 
         memcpy(data + 64 + i * 4, &global_rx_buffer[1], 4);
@@ -186,7 +201,7 @@ uint8_t atsha204_write_config(int fd, uint8_t data[68]) {
         // Write the configuration parameters to the slot
         cmd_args.op_code = SHA204_WRITE;
         cmd_args.param_1 = SHA204_ZONE_CONFIG;
-        cmd_args.param_2 = DEVICE_MODES_ADDRESS + i;   // 从0x04开始写
+        cmd_args.param_2 = 0x04 + i;   // 从0x04开始写
         cmd_args.data_len_1 = SHA204_ZONE_ACCESS_4;
         cmd_args.data_1 = data + 4 * i;
         cmd_args.data_len_2 = 0;
@@ -216,7 +231,7 @@ uint8_t atsha204_write_config(int fd, uint8_t data[68]) {
 **********************************************************************/
 uint8_t atsha204_read_data(int fd, int slot, uint8_t *readdata) {
     uint8_t status = SHA204_SUCCESS;
-    if (slot < 0 || slot > 15) { return -1; }
+    if (slot < 0 || slot > 15) { return SHA204_BAD_PARAM; }
     uint16_t slot_addr = (uint16_t) (slot * 8);
 
     cmd_args.op_code = SHA204_READ;
@@ -280,7 +295,7 @@ uint8_t atsha204_lock_conf(int fd) {
 **********************************************************************/
 uint8_t atsha204_write_data(int fd, int slot, uint8_t *write_data) {
     uint8_t status = SHA204_SUCCESS;
-    if (slot < 0 || slot > 15) { return -1; }
+    if (slot < 0 || slot > 15) { return SHA204_BAD_PARAM; }
     uint16_t slot_addr = (uint16_t) (slot * 8);
 
     cmd_args.op_code = SHA204_WRITE;
@@ -370,7 +385,7 @@ uint8_t atsha204_encrypted_read(int fd, uint16_t key_id, uint8_t *key_value,uint
     cmd_args.rx_buffer = global_rx_buffer;
     status = sha204m_execute(fd,&cmd_args);
     //sha204p_idle(fd);
-    if(status != SHA204_SUCCESS) { printf(" Mathine NONCE  FAILED! \n"); return -1; }
+    if(status != SHA204_SUCCESS) { printf(" Mathine NONCE  FAILED! \n"); return status; }
     // Capture the random number from the NONCE command if it were successful
     memcpy(random_number,&global_rx_buffer[1],0x20);
 
@@ -380,7 +395,7 @@ uint8_t atsha204_encrypted_read(int fd, uint16_t key_id, uint8_t *key_value,uint
     nonce_param.rand_out = random_number;
     nonce_param.temp_key = &computed_tempkey;
     status = sha204h_nonce(nonce_param);
-    if(status != SHA204_SUCCESS) { printf("HOST   NONCE  FAILED! \n"); return -1; }
+    if(status != SHA204_SUCCESS) { printf("HOST   NONCE  FAILED! \n"); return status; }
 
     //gendig operation
     cmd_args.op_code = SHA204_GENDIG;
@@ -398,7 +413,7 @@ uint8_t atsha204_encrypted_read(int fd, uint16_t key_id, uint8_t *key_value,uint
     cmd_args.rx_buffer = global_rx_buffer;
     status = sha204m_execute(fd,&cmd_args);
     sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("Mathine  GENGID  FAILED! \n"); return -1; }
+    if(status != SHA204_SUCCESS) { printf("Mathine  GENGID  FAILED! \n"); return status; }
 
     //Host gengid operation
     memcpy(tmpdata,key_value,0x20);
@@ -407,7 +422,7 @@ uint8_t atsha204_encrypted_read(int fd, uint16_t key_id, uint8_t *key_value,uint
     gendig_param.stored_value = tmpdata;
     gendig_param.temp_key = &computed_tempkey;
     status = sha204h_gen_dig(gendig_param);
-    if(status != SHA204_SUCCESS) { printf("HOST   GENDIG  FAILED! \n"); return -1; }
+    if(status != SHA204_SUCCESS) { printf("HOST   GENDIG  FAILED! \n"); return status; }
 
     //Read operation
     cmd_args.op_code = SHA204_READ;
@@ -427,12 +442,12 @@ uint8_t atsha204_encrypted_read(int fd, uint16_t key_id, uint8_t *key_value,uint
     status = sha204m_execute(fd,&cmd_args);
     sha204p_sleep(fd);
     memcpy(tmpdata,&global_rx_buffer[1],0x20);
-    if(status != SHA204_SUCCESS) { printf("FAILED! e_read_data\n"); return -1 ; }
+    if(status != SHA204_SUCCESS) { printf("FAILED! e_read_data\n"); return status ; }
 
     decrypt_param.data = tmpdata;
     decrypt_param.temp_key = &computed_tempkey;
     status = sha204h_decrypt(decrypt_param);
-    if(status != SHA204_SUCCESS) { printf("HOST   DECRYPT  FAILED! \n"); return -1; }
+    if(status != SHA204_SUCCESS) { printf("HOST   DECRYPT  FAILED! \n"); return status; }
     memcpy(readdata,tmpdata,0x20);
     return status;
 }
@@ -477,7 +492,7 @@ uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, ui
     cmd_args.rx_buffer = global_rx_buffer;
     status = sha204m_execute(fd,&cmd_args);
     //sha204p_idle(fd);
-    if(status != SHA204_SUCCESS) { printf(" Mathine NONCE  FAILED! \n"); return -1; }
+    if(status != SHA204_SUCCESS) { printf(" Mathine NONCE  FAILED! \n"); return status; }
     // Capture the random number from the NONCE command if it were successful
     memcpy(random_number,&global_rx_buffer[1],0x20);
 
@@ -487,7 +502,7 @@ uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, ui
     nonce_param.rand_out = random_number;
     nonce_param.temp_key = &computed_tempkey;
     status = sha204h_nonce(nonce_param);
-    if(status != SHA204_SUCCESS) { printf("HOST   NONCE  FAILED! \n");  return -1; }
+    if(status != SHA204_SUCCESS) { printf("HOST   NONCE  FAILED! \n");  return status; }
 
     //Host gengid operation
     memcpy(tmpdata,key_value,0x20);
@@ -496,7 +511,7 @@ uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, ui
     gendig_param.stored_value = tmpdata;
     gendig_param.temp_key = &computed_tempkey;
     status = sha204h_gen_dig(gendig_param);
-    if(status != SHA204_SUCCESS) { printf("HOST   GENDIG  FAILED! \n");  return -1; }
+    if(status != SHA204_SUCCESS) { printf("HOST   GENDIG  FAILED! \n");  return status; }
 
     //gendig operation
     cmd_args.op_code = SHA204_GENDIG;
@@ -514,7 +529,7 @@ uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, ui
     cmd_args.rx_buffer = global_rx_buffer;
     status = sha204m_execute(fd,&cmd_args);
     sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("Mathine  GENGID  FAILED! \n");  return -1; }
+    if(status != SHA204_SUCCESS) { printf("Mathine  GENGID  FAILED! \n");  return status; }
 
     //Host XOR operation
     memcpy(tmpdata,writedata,0x20);
@@ -524,7 +539,7 @@ uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, ui
     encrypt_param.data = tmpdata;
     encrypt_param.mac = host_mac;
     status = sha204h_encrypt(encrypt_param);
-    if(status != SHA204_SUCCESS) { printf("HOST   ENCRYPT  FAILED! \n");  return -1; }
+    if(status != SHA204_SUCCESS) { printf("HOST   ENCRYPT  FAILED! \n");  return status; }
 
     //Write operation
     cmd_args.op_code = SHA204_WRITE;
@@ -543,7 +558,7 @@ uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, ui
     sha204p_wakeup(fd);
     status = sha204m_execute(fd,&cmd_args);
     sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("FAILED! e_write_data\n");  return -1 ; }
+    if(status != SHA204_SUCCESS) { printf("FAILED! e_write_data\n");  return status ; }
 
     return status;
 

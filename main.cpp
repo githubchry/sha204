@@ -7,10 +7,17 @@
   * Modified:jli@acorn-net.com
  */
 
+#include "sha204/atsha204_actions.h"
+
+#include <fcntl.h>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>             // close/write/read
+#include <sys/ioctl.h>
+#include <linux/i2c-dev.h>
+
 #include <sstream>  // std::ostringstream
 #include <iomanip>
-
-#include "sha204/atsha204_actions.h"
 
 
 #define I2C_BUS       "/dev/i2c-c"
@@ -63,13 +70,17 @@ void dump_config(uint8_t data[88]) {
 
 //*
 void atsha204_init(int fd) {
-    static uint8_t status = SHA204_SUCCESS;
-    static uint8_t config_params[0x04] = {0};
-    uint8_t i = 0;
+    uint8_t status = SHA204_SUCCESS;
 
 
-    printf("PERSONALIZATION!_!\n");
+    // 验证锁定状态
+    uint8_t lock_status[4];
+    if (SHA204_SUCCESS != atsha204_read_lock(fd, lock_status)) return;
 
+    if ((lock_status[0x02] == 0x00) && (lock_status[0x03] == 00)) {
+        printf("加密芯片已锁定!\n");
+        return;
+    }
 
     uint8_t defconfig[68] = {
             0xc8, 0x00, 0x55, 0x00,  //I2C_Addr  CheckMacConfig  OTP_Mode  SelectorMode
@@ -146,8 +157,7 @@ void atsha204_init(int fd) {
         return;
     }
 
-    // 验证锁定状态
-    uint8_t lock_status[4];
+    // 再次验证锁定状态
     status = atsha204_read_lock(fd, lock_status);
     if (status != SHA204_SUCCESS) {
         printf("FAILED! p_7\n");
