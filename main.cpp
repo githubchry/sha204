@@ -61,197 +61,111 @@ void dump_config(uint8_t data[88]) {
 }
 
 
-/*
-void atsha204_personalization(int fd) {
+//*
+void atsha204_init(int fd) {
     static uint8_t status = SHA204_SUCCESS;
     static uint8_t config_params[0x04] = {0};
-    static uint8_t slot_content [0x20] = {0};
     uint8_t i = 0;
 
 
     printf("PERSONALIZATION!_!\n");
 
 
-    // **** EXERCISE: SLOTS 0 & 1 CONFIGURATION
-    // Configure slots 0 and 1 as follows:
-    //		- Slot 0 for storage of a non-readable and non-modifiable key.
-    //		- Program slot 0 key to hex: 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55 55
-    //		- Slot 1 for storage of a modifiable and encrypted-readable key.
-    //		- Program slot 1 key to hex: 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11
+    uint8_t defconfig[68] = {
+            0xc8, 0x00, 0x55, 0x00,  //I2C_Addr  CheckMacConfig  OTP_Mode  SelectorMode
 
-    // Decide the slot configuration parameters
-    config_params[0] = 0x80;	// Slot 0 : IsSecret, Read Key = 0x00
-    config_params[1] = 0x80;	// Slot 0 : Write Never, Write Key = 0x00;
-    config_params[2] = 0xC0;	// Slot 1 : Is Secret, Encrypted Readable, Read Key = 0x00
-    config_params[3] = 0xF0;	// Slot 1 : Encrypted writes, Write Key = 0x00
+            // slot0存密钥,不可读写;slot1存密钥,可加密读写;
+            0x80, 0x80, 0xC0, 0xF0,  //SlotConfig  0  1
+            // slot2根据slot1加密读, 根据slot0加密写;slot3根据slot1加密读, 明文写
+            0x41, 0x40, 0x41, 0x00,  //SlotConfig  2  3
+            // slot4/5设置成密钥区，不能进行任何读写，可以执行所有加密命令，无限次使用
+            0x80, 0xA0, 0x80, 0xA0,  //SlotConfig  4  5
+            // 剩下的全部搞成明文读写
+            0x00, 0x00, 0x00, 0x00,  //SlotConfig  6  7
+            0x00, 0x00, 0x00, 0x00,  //SlotConfig  8  9     8存放SN
+            0x00, 0x00, 0x00, 0x00,  //SlotConfig 10 11
+            0x00, 0x00, 0x00, 0x00,  //SlotConfig 12 13
+            0x00, 0x00, 0x00, 0x00,  //SlotConfig 14 15
 
-    // Write the configuration parameters to the slot
-    atsha204_write_conf(fd, 0, 0x80, 0x80);
+            0xff, 0x00, 0xff, 0x00,  //UseFlag UpdateCount 0 1
+            0xff, 0x00, 0xff, 0x00,  //UseFlag UpdateCount 2 3
+            0xff, 0x00, 0xff, 0x00,  //UseFlag UpdateCount 4 5
+            0xff, 0x00, 0xff, 0x00,  //UseFlag UpdateCount 6 7
 
-    cmd_args.op_code = SHA204_WRITE;
-    cmd_args.param_1 = SHA204_ZONE_CONFIG;
-    cmd_args.param_2 = SLOT_CONFIG_0_1_ADDRESS;
-    cmd_args.data_len_1 = SHA204_ZONE_ACCESS_4;
-    cmd_args.data_1 = config_params;
-    cmd_args.data_len_2 = 0;
-    cmd_args.data_2 = NULL;
-    cmd_args.data_len_3 = 0;
-    cmd_args.data_3 = NULL;
-    cmd_args.tx_size = 0x10;
-    cmd_args.tx_buffer = global_tx_buffer;
-    cmd_args.rx_size = 0x10;
-    cmd_args.rx_buffer = global_rx_buffer;
-    sha204m_execute(fd,&cmd_args);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) {printf("FAILED! p_1\n"); return; }
+            0xff, 0xff, 0xff, 0xff,  //LastKeyUse  0 - 3
+            0xff, 0xff, 0xff, 0xff,  //LastKeyUse  4 - 7
+            0xff, 0xff, 0xff, 0xff,  //LastKeyUse  8 -11
+            0xff, 0xff, 0xff, 0xff   //LastKeyUse 12 -15
+    };
 
-
-
-    // **** EXERCISE: SLOTS 2 & 3 CONFIGURATION
-    // Configure slots 2 and 3 as follows:
-    //		- Slot 2 for encrypted reads and encrypted writes. Use key 1 for reads, key 0 for writes.
-    //		- Leave factory default content as initial value in slot 2.
-    //		- Slot 3 for encrypted reads and clear writes. Use key 1 for reads.
-    //		- Leave factory default content as initial value in slot 3
-
-    // Decide the slot configuration parameters
-    config_params[0] = 0x41;	// Slot 2 : Encrypted Reads, Read Key = 0x01
-    config_params[1] = 0x40;	// Slot 2 : Encrypted Writes, Write Key = 0x00;
-    config_params[2] = 0x41;	// Slot 3 : Encrypted Reads, Read Key = 0x01
-    config_params[3] = 0x00;	// Slot 3 : Clear writes, Write Key = 0x00
-
-    // Write the configuration parameters to the slot
-    cmd_args.op_code = SHA204_WRITE;
-    cmd_args.param_1 = SHA204_ZONE_CONFIG;
-    cmd_args.param_2 = SLOT_CONFIG_2_3_ADDRESS;
-    cmd_args.data_len_1 = SHA204_ZONE_ACCESS_4;
-    cmd_args.data_1 = config_params;
-    cmd_args.data_len_2 = 0;
-    cmd_args.data_2 = NULL;
-    cmd_args.data_len_3 = 0;
-    cmd_args.data_3 = NULL;
-    cmd_args.tx_size = 0x10;
-    cmd_args.tx_buffer = global_tx_buffer;
-    cmd_args.rx_size = 0x10;
-    cmd_args.rx_buffer = global_rx_buffer;
-    sha204m_execute(fd,&cmd_args);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("FAILED! p_2\n"); return; }
-
+    status = atsha204_write_config(fd, defconfig);
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED p_2!\n");
+        return;
+    }
 
     // **** LOCK THE CONFIGURATION ZONE.
-
-    // Perform the configuration lock:
-    cmd_args.op_code = SHA204_LOCK;
-    cmd_args.param_1 = LOCK_ZONE_NO_CRC;
-    cmd_args.param_2 = LOCK_PARAM2_NO_CRC;
-    cmd_args.data_len_1 = 0X00;
-    cmd_args.data_1 = NULL;
-    cmd_args.data_len_2 = 0;
-    cmd_args.data_2 = NULL;
-    cmd_args.data_len_3 = 0;
-    cmd_args.data_3 = NULL;
-    cmd_args.tx_size = 0x10;
-    cmd_args.tx_buffer = global_tx_buffer;
-    cmd_args.rx_size = 0x10;
-    cmd_args.rx_buffer = global_rx_buffer;
-    sha204m_execute(fd,&cmd_args);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) {printf("FAILED p_3!\n"); return; }
+    status = atsha204_lock_conf(fd);
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED p_3!\n");
+        return;
+    }
 
 
-
-    // **** INITIALIZE SLOT CONTENT
-
+    // 锁定data区域前, 根据计划先写入密钥
+    uint8_t slot_content[0x20] = {0};
     // Slot 0: Program Initial Content
-    for(i=0x00; i<0x20; i++) {
-        slot_content[i] = 0x55;
+    memset(slot_content, 0, sizeof(slot_content));
+    memcpy(slot_content, "3wlink.cn", 9);
+    status = atsha204_write_data(fd, 0, slot_content);
+
+
+    memset(slot_content, 0, sizeof(slot_content));
+    memcpy(slot_content, "GgsDdu.2017", 11);
+    status = atsha204_write_data(fd, 4, slot_content);
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED! p_4\n");
+        return;
     }
-    cmd_args.op_code = SHA204_WRITE;
-    cmd_args.param_1 = SHA204_ZONE_DATA|SHA204_ZONE_COUNT_FLAG;
-    cmd_args.param_2 = SLOT_0_ADDRESS;
-    cmd_args.data_len_1 = SHA204_ZONE_ACCESS_32;
-    cmd_args.data_1 = slot_content;
-    cmd_args.data_len_2 = 0;
-    cmd_args.data_2 = NULL;
-    cmd_args.data_len_3 = 0;
-    cmd_args.data_3 = NULL;
-    cmd_args.tx_size = 0x30;
-    cmd_args.tx_buffer = global_tx_buffer;
-    cmd_args.rx_size = 0x10;
-    cmd_args.rx_buffer = global_rx_buffer;
-    sha204m_execute(fd,&cmd_args);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("FAILED! p_4\n"); return; }
 
 
-
-    // Slot 1: Program Initial Content
-    for(i=0x00; i<0x20; i++) {
-        slot_content[i] = 0x11;
+    memset(slot_content, 0, sizeof(slot_content));
+    memcpy(slot_content, "Admin_123", 9);
+    status = atsha204_write_data(fd, 5, slot_content);
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED! p_4\n");
+        return;
     }
-    cmd_args.op_code = SHA204_WRITE;
-    cmd_args.param_1 = SHA204_ZONE_DATA|SHA204_ZONE_COUNT_FLAG;
-    cmd_args.param_2 = SLOT_1_ADDRESS;
-    cmd_args.data_len_1 = SHA204_ZONE_ACCESS_32;
-    cmd_args.data_1 = slot_content;
-    cmd_args.data_len_2 = 0;
-    cmd_args.data_2 = NULL;
-    cmd_args.data_len_3 = 0;
-    cmd_args.data_3 = NULL;
-    cmd_args.tx_size = 0x30;
-    cmd_args.tx_buffer = global_tx_buffer;
-    cmd_args.rx_size = 0x10;
-    cmd_args.rx_buffer = global_rx_buffer;
-    sha204m_execute(fd,&cmd_args);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("FAILED! p_5\n"); return; }
 
 
-
-    // **** LOCK THE DATA REGION.
-
-    // Perform the configuration lock:
+    //
+    // **** LOCK THE DATA REGION. 锁定data区域
     status = atsha204_lock_data(fd);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("FAILED! p_6\n"); return; }
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED! p_6\n");
+        return;
+    }
 
-    // Verify Complete Lock By Inspecting the LOCK CONFIG and LOCK VALUE registers
-    // Perform the configuration lock:
-    cmd_args.op_code = SHA204_READ;
-    cmd_args.param_1 = SHA204_ZONE_CONFIG;
-    cmd_args.param_2 = EXTRA_SELECTOR_LOCK_ADDRESS;
-    cmd_args.data_len_1 = 0X00;
-    cmd_args.data_1 = NULL;
-    cmd_args.data_len_2 = 0x00;
-    cmd_args.data_2 = NULL;
-    cmd_args.data_len_3 = 0x00;
-    cmd_args.data_3 = NULL;
-    cmd_args.tx_size = 0x10;
-    cmd_args.tx_buffer = global_tx_buffer;
-    cmd_args.rx_size = 0x10;
-    cmd_args.rx_buffer = global_rx_buffer;
-    status = sha204m_execute(fd,&cmd_args);
-    sha204p_sleep(fd);
-    if(status != SHA204_SUCCESS) { printf("FAILED! p_7\n"); return; }
-
-
-
-
-
-    if((global_rx_buffer[0x03] != 0x00) || (global_rx_buffer[0x04] != 00)) { printf("FAILED! p_8\n"); return; }
+    // 验证锁定状态
+    uint8_t lock_status[4];
+    status = atsha204_read_lock(fd, lock_status);
+    if (status != SHA204_SUCCESS) {
+        printf("FAILED! p_7\n");
+        return;
+    }
+    if ((lock_status[0x02] != 0x00) || (lock_status[0x03] != 00)) {
+        printf("FAILED! p_8\n");
+        return;
+    }
 
     printf("SUCCESSFUL! p_00\n");
-
 
     return;
 }
 
-*/
+//*/
 
 int main(int argc, char *argv[]) {
-    int fd, i, j;
-    static uint8_t status = SHA204_SUCCESS;
     uint8_t serect[32] = {0};    //the key of slot 0
     uint8_t tmp_conf[2];
     uint8_t tmp_key[32];
@@ -269,7 +183,8 @@ int main(int argc, char *argv[]) {
             0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55
     };
 
-    if ((fd = open(I2C_BUS, O_RDWR)) < 0) {
+    int fd = open(I2C_BUS, O_RDWR);
+    if (fd < 0) {
         printf("Unable to open i2c control file");
         exit(1);
     }
@@ -278,33 +193,38 @@ int main(int argc, char *argv[]) {
         printf("Set chip address failed\n");
     }
 
-
-    atsha204_read_data(fd, 0, tmp_key);
-    printf("read atsha204a slot %d:", 0);
-    for (int i = 0; i < SHA204_KEY_SIZE; i++)printf(" %02x", tmp_key[i]);
-    printf("\n");
+    atsha204_init(fd);
 
 
     uint8_t config[88];
-    atsha204_read_config(fd, config);
-
+    uint8_t status = atsha204_read_config(fd, config);
+    //assert_param_return(SHA204_SUCCESS == status, -1);
     dump_config(config);
 
     uint8_t sn[9];
-    atsha204_read_sn(fd, sn);
-    printf("SN:");for (int i = 0; i < 9; i++)printf(" %02x", sn[i]);printf("\n");
+    status = atsha204_read_sn(fd, sn);
+    printf("SN:");
+    for (int i = 0; i < 9; i++)printf(" %02x", sn[i]);
+    printf("\n");
+
+
+    for (int i = 0; i < 16; i++){
+        memset(tmp_key, 0, sizeof(tmp_key));
+        status = atsha204_read_data(fd, i, tmp_key);
+        printf("SLOT %d data: %s\n", i, tmp_key);
+    }
     return 0;
 
 
-    encrypted_write(fd, 0, serect, 4, key_0);
-    encrypted_read(fd, 0, serect, 4, tmp_key);
-    for (i = 0; i < 32; i++) {
+    atsha204_encrypted_write(fd, 0, serect, 4, key_0);
+    atsha204_encrypted_read(fd, 0, serect, 4, tmp_key);
+    for (int i = 0; i < 32; i++) {
         printf("%02x", tmp_key[i]);
         if (31 == i) printf("\n");
     }
-    encrypted_write(fd, 0, serect, 4, key_15);
-    encrypted_read(fd, 0, serect, 4, tmp_key);
-    for (i = 0; i < 32; i++) {
+    atsha204_encrypted_write(fd, 0, serect, 4, key_15);
+    atsha204_encrypted_read(fd, 0, serect, 4, tmp_key);
+    for (int i = 0; i < 32; i++) {
         printf("%02x", tmp_key[i]);
         if (31 == i) printf("\n");
     }

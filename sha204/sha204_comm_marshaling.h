@@ -76,19 +76,19 @@
 
 //////////////////////////////////////////////////////////////////////
 // command op-code definitions
-#define SHA204_CHECKMAC                 ((uint8_t) 0x28)       //!< CheckMac command op-code
-#define SHA204_DERIVE_KEY               ((uint8_t) 0x1C)       //!< DeriveKey command op-code
-#define SHA204_DEVREV                   ((uint8_t) 0x30)       //!< DevRev command op-code
-#define SHA204_GENDIG                   ((uint8_t) 0x15)       //!< GenDig command op-code
-#define SHA204_HMAC                     ((uint8_t) 0x11)       //!< HMAC command op-code
-#define SHA204_LOCK                     ((uint8_t) 0x17)       //!< Lock command op-code
-#define SHA204_MAC                      ((uint8_t) 0x08)       //!< MAC command op-code
-#define SHA204_NONCE                    ((uint8_t) 0x16)       //!< Nonce command op-code
-#define SHA204_PAUSE                    ((uint8_t) 0x01)       //!< Pause command op-code
-#define SHA204_RANDOM                   ((uint8_t) 0x1B)       //!< Random command op-code
-#define SHA204_READ                     ((uint8_t) 0x02)       //!< Read command op-code
-#define SHA204_UPDATE_EXTRA             ((uint8_t) 0x20)       //!< UpdateExtra command op-code
-#define SHA204_WRITE                    ((uint8_t) 0x12)       //!< Write command op-code
+#define SHA204_CHECKMAC                 ((uint8_t) 0x28)       //!< CheckMac command op-code   验证在另一个 MicrochipCryptoAuthentication 器件上计算的MAC。
+#define SHA204_DERIVE_KEY               ((uint8_t) 0x1C)       //!< DeriveKey command op-code  从目标密钥或父密钥得出目标密钥值。
+#define SHA204_DEVREV                   ((uint8_t) 0x30)       //!< DevRev command op-code     返回器件版本信息
+#define SHA204_GENDIG                   ((uint8_t) 0x15)       //!< GenDig command op-code     通过随机或输入种子和密钥生成数据保护摘要。
+#define SHA204_HMAC                     ((uint8_t) 0x11)       //!< HMAC command op-code       使用 HMAC/SHA-256 计算密钥和其他内部数据的响应。
+#define SHA204_LOCK                     ((uint8_t) 0x17)       //!< Lock command op-code       防止进一步修改器件的某个区域。
+#define SHA204_MAC                      ((uint8_t) 0x08)       //!< MAC command op-code        使用 SHA-256 计算密钥和其他内部数据的响应。
+#define SHA204_NONCE                    ((uint8_t) 0x16)       //!< Nonce command op-code      生成一个 32 字节的随机数和一个内部存储的临时值。
+#define SHA204_PAUSE                    ((uint8_t) 0x01)       //!< Pause command op-code      选择性地仅将共用总线上的一个器件置于空闲状态。
+#define SHA204_RANDOM                   ((uint8_t) 0x1B)       //!< Random command op-code     生成一个随机数。
+#define SHA204_READ                     ((uint8_t) 0x02)       //!< Read command op-code       从器件读取4个或32个字节，可以使用或不使用身份验证和加密。
+#define SHA204_UPDATE_EXTRA             ((uint8_t) 0x20)       //!< UpdateExtra command op-code配置区域锁定后，更新配置区域内的字节 84 或 85。
+#define SHA204_WRITE                    ((uint8_t) 0x12)       //!< Write command op-code      向器件写入4个或32个字节，可以使用或不使用身份验证和加密。
 
 
 //////////////////////////////////////////////////////////////////////

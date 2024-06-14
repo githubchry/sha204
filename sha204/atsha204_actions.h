@@ -7,6 +7,7 @@
 #include <string.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#include <stdbool.h>
 
 #ifndef ATSHA204_CTC_D1_H_
 #define ATSHA204_CTC_D1_H_
@@ -177,21 +178,24 @@ struct sha204_command_parameters cmd_args;				// Global Generalized Command Para
 
 //! Topics
 extern void atsha204_personalization(int fd);
-extern void random_challenge_response_authentication(int fd, uint16_t key_id, uint8_t *secret_key_value);
-extern uint8_t encrypted_read(int fd, uint16_t key_id, uint8_t *key_value, uint16_t slot, uint8_t *readdata);
-extern uint8_t encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, uint16_t slot, uint8_t *writedata) ;
+uint8_t random_challenge_response_authentication(int fd, uint16_t key_id, uint8_t *secret_key_value);
 
 //atsha204_actions
 uint8_t atsha204_read_sn(int fd, uint8_t data[9]);
+uint8_t atsha204_read_lock(int fd, uint8_t data[4]);
 uint8_t atsha204_read_devrev(int fd, uint8_t data[4]);
+
 uint8_t atsha204_read_config(int fd, uint8_t data[88]);
 uint8_t atsha204_write_config(int fd, uint8_t data[68]);
-uint8_t atsha204_read_conf(int fd, int slot, uint8_t *read_conf);
-uint8_t atsha204_read_data(int fd, int slot, uint8_t *read_data);
-uint8_t atsha204_write_conf(int fd, int slot, uint8_t conf_low_8_bits, uint8_t conf_high_8_bits);
-uint8_t atsha204_write_data(int fd, int slot,  uint8_t *write_data);
+
 uint8_t atsha204_lock_conf(int fd);
 uint8_t atsha204_lock_data(int fd);
+
+uint8_t atsha204_read_data(int fd, int slot, uint8_t *read_data);
+uint8_t atsha204_write_data(int fd, int slot,  uint8_t *write_data);
+
+uint8_t atsha204_encrypted_read(int fd, uint16_t key_id, uint8_t *key_value, uint16_t slot, uint8_t *readdata);
+uint8_t atsha204_encrypted_write(int fd, uint16_t key_id, uint8_t *key_value, uint16_t slot, uint8_t *writedata);
 
 
 #ifdef __cplusplus
